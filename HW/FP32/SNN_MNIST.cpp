@@ -3,8 +3,7 @@
 #include<vector>
 #include<queue>
 #include<functional>
-#include "weights.cpp"
-
+#include "weights.h"
 
 
 class LIFNeuron {
@@ -20,7 +19,7 @@ class LIFNeuron {
     enum ResetMechanism { SUBTRACT_THRESHOLD , RESET_TO_ZERO  };
     ResetMechanism current_reset_mechanism;
 
-    LIFNeuron (float v_th=0.5, float e_l=0, float fixed_leak_amt = 0.001 , ResetMechanism rest_mech=RESET_TO_ZERO):
+    LIFNeuron (float v_th=0.5, float e_l=0, float fixed_leak_amt = 0.05 , ResetMechanism rest_mech=RESET_TO_ZERO):
     membrane_potential(0.0f),
     has_fired_in_current_steps(false),
     last_update_time(0) ,
@@ -128,7 +127,7 @@ const int num_output_neurons = 10;
 
 float v_threshold = 1.0f;
 float e_leak = 0;
-float fixed_leak_per_step = 0.001;
+float fixed_leak_per_step = 0.05;
 LIFNeuron::ResetMechanism reset_mech = LIFNeuron::RESET_TO_ZERO ;
 
 
@@ -154,19 +153,35 @@ for ( int i = 0 ; i < num_output_neurons ; ++i ) {
 std::vector<std::vector<std::vector<float>>> all_weights;
 
 std::vector<std::vector<float>> weights_ih( num_input_neurons , std::vector<float>(num_hidden_neurons));
-weights_ih[0][0] = 0.6f; weights_ih[0][1] = 0.3f; weights_ih[0][2] = 0.1f; weights_ih[0][3] = 0.8f;
 
-weights_ih[1][0] = 0.2f; weights_ih[1][1] = 0.7f; weights_ih[1][2] = 0.4f; weights_ih[1][3] = 0.1f;
+// weights_ih[0][0] = 0.6f; weights_ih[0][1] = 0.3f; weights_ih[0][2] = 1.1f; weights_ih[0][3] = 0.8f;
 
-weights_ih[2][0] = 0.9f; weights_ih[2][1] = 0.1f; weights_ih[2][2] = 0.6f; weights_ih[2][3] = 0.2f;
+// weights_ih[1][0] = 0.2f; weights_ih[1][1] = 0.7f; weights_ih[1][2] = 1.1f; weights_ih[1][3] = 0.1f;
 
+// weights_ih[2][0] = 0.9f; weights_ih[2][1] = 0.1f; weights_ih[2][2] = 1.1f; weights_ih[2][3] = 0.2f;
+
+for ( int hid_idx = 0 ; hid_idx < num_hidden_neurons ; ++hid_idx ){
+    for ( int in_idx = 0 ; in_idx < num_input_neurons ; ++in_idx ){
+        weights_ih[in_idx][hid_idx] = fc1_weight[ hid_idx * num_input_neurons + in_idx ];
+    }
+}
 all_weights.push_back(weights_ih);
 
 std::vector < std::vector<float>> weights_ho ( num_hidden_neurons , std::vector<float>(num_output_neurons));
-weights_ho[0][0] = 0.5f; weights_ho[0][1] = 0.3f;
-weights_ho[1][0] = 0.2f; weights_ho[1][1] = 0.8f;
-weights_ho[2][0] = 0.7f; weights_ho[2][1] = 0.1f;
-weights_ho[3][0] = 0.4f; weights_ho[3][1] = 0.6f;
+
+// weights_ho[0][0] = 0.5f; weights_ho[0][1] = 0.3f;
+
+// weights_ho[1][0] = 0.2f; weights_ho[1][1] = 0.8f;
+
+// weights_ho[2][0] = 0.7f; weights_ho[2][1] = 0.1f;
+
+// weights_ho[3][0] = 0.4f; weights_ho[3][1] = 0.6f;
+
+for (int out_idx = 0 ; out_idx < num_output_neurons ; ++out_idx ){
+    for ( int hi_idx = 0 ; hi_idx < num_hidden_neurons ; ++hi_idx ){
+        weights_ho[hi_idx][out_idx] = fc2_weight[ out_idx * num_hidden_neurons + hi_idx ];
+    }
+}
 all_weights.push_back(weights_ho);
 
 
@@ -177,9 +192,11 @@ int current_simulation_time = 0.0;
 
 event_queue.push({ 20 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 0 , 1.2f });
 event_queue.push({ 50 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 1 , 1.0f });
-event_queue.push({ 70 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 2 , 0.5f });
+event_queue.push({ 70 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 2 , 1.5f });
 
 int simulation_end_time = 100;
+
+std::vector<int> output_spike_counts (num_output_neurons , 0 );
 
 std::cout<<"---starting simulation---\n";
 
@@ -197,17 +214,17 @@ while( !event_queue.empty() & current_simulation_time <= simulation_end_time ){
 
     }
 
-    std::cout<<"\nTime  "<<current_simulation_time<<" - processing event type ";
+    // std::cout<<"\nTime  "<<current_simulation_time<<" - processing event type ";
 
     if ( current_event.Type == INPUT_SPIKE_EVENT){
 
-        std::cout << "INPUT_SPIKE_EVENT (to Input Layer Neuron " << current_event.target_neuron_id << ")\n";
+        // std::cout << "INPUT_SPIKE_EVENT (to Input Layer Neuron " << current_event.target_neuron_id << ")\n";
 
         LIFNeuron& target_neuron = all_layers[0][current_event.target_neuron_id];
 
         bool fired = target_neuron.update_membrane_and_check_spike ( current_event.effective_current , current_simulation_time );
 
-        std::cout<<" Input Neuron "<< current_event.target_neuron_id<<" Vm "<<target_neuron.get_membrane_potential();
+        // std::cout<<" Input Neuron "<< current_event.target_neuron_id<<" Vm "<<target_neuron.get_membrane_potential();
 
         if (fired){
 
@@ -242,22 +259,22 @@ while( !event_queue.empty() & current_simulation_time <= simulation_end_time ){
 
     else if (current_event.Type == NEURON_SPIKE_EVENT) {
 
-                      std::cout << "NEURON_SPIKE_EVENT (from Layer " << current_event.source_neuron_layer_id
-                      << " Neuron " << current_event.source_neuron_id
-                      << " to Layer " << current_event.target_neuron_layer_id
-                      << " Neuron " << current_event.target_neuron_id << ")\n";
+                    //   std::cout << "NEURON_SPIKE_EVENT (from Layer " << current_event.source_neuron_layer_id
+                    //   << " Neuron " << current_event.source_neuron_id
+                    //   << " to Layer " << current_event.target_neuron_layer_id
+                    //   << " Neuron " << current_event.target_neuron_id << ")\n";
 
                       LIFNeuron& target_neuron = all_layers[current_event.target_neuron_layer_id][current_event.target_neuron_id];
 
                       bool fired = target_neuron.update_membrane_and_check_spike(current_event.effective_current , current_simulation_time );
 
-                      std::cout << "  Layer " << current_event.target_neuron_layer_id
-                      << " Neuron " << current_event.target_neuron_id
-                      << ": Vm = " << target_neuron.get_membrane_potential();
+                    //   std::cout << "  Layer " << current_event.target_neuron_layer_id
+                    //   << " Neuron " << current_event.target_neuron_id
+                    //   << ": Vm = " << target_neuron.get_membrane_potential();
 
                         if (fired){
                             
-                            std::cout<<" spike \n";
+                            // std::cout<<" spike \n";
 
                             int source_layer_idx = current_event.target_neuron_layer_id;
                             int next_layer_idx = source_layer_idx + 1;
@@ -281,12 +298,14 @@ while( !event_queue.empty() & current_simulation_time <= simulation_end_time ){
 
                             else{
 
-                                    std::cout<<"output layer spike";
+                                    // std::cout<<"output layer spike";
+
+                                    output_spike_counts[current_event.target_neuron_id]++;
 
                                 }
 
                         }
-                                    std::cout << std::endl;
+                                    // std::cout << std::endl;
 
                 }
 
@@ -298,6 +317,27 @@ while( !event_queue.empty() & current_simulation_time <= simulation_end_time ){
     std::cout << "\n--- End of Event-Driven Simulation ---\n";
     std::cout << "Final Simulation Time: " << current_simulation_time << "s\n";
 
+
+
+    std::cout<<"\n    output summary \n";
+    std::cout<<"-----------------------------\n";
+
+    int max_spikes = -1;
+    int wining_neuron_id = -1 ; 
+
+    for (int i = 0 ; i < num_output_neurons ; ++i ){
+        // std::cout<<"Output Neuron "<<i<<": "<<output_spike_counts[i]<<" spikes\n";
+        if (output_spike_counts[i] > max_spikes ){
+            max_spikes = output_spike_counts[i];
+            wining_neuron_id = i ;
+        }        
+    }
+
+    if (wining_neuron_id != -1 ){
+        std::cout<<"Neuron "<<wining_neuron_id<<" wins\n";
+    }else{
+        std::cout<<"No Neuron spiked.\n";
+    }
     return 0;
 
 
