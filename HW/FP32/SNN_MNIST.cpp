@@ -121,13 +121,6 @@ struct SpikeEvent {
 int main(){
 
 
-// LIFNeuron firstNeuron;
-// std::cout<<firstNeuron.get_membrane_potential();
-// std::cout<<"\n"<<firstNeuron.update(0.40);
-// std::cout<<"\n"<<firstNeuron.get_membrane_potential();
-// std::cout<<"\n"<<firstNeuron.update(0);
-// std::cout<<"\n"<<firstNeuron.get_membrane_potential();
-
 const int num_input_neurons = 784;
 const int num_hidden_neurons = 256;
 const int num_output_neurons = 10;
@@ -161,11 +154,7 @@ std::vector<std::vector<std::vector<float>>> all_weights;
 
 std::vector<std::vector<float>> weights_ih( num_input_neurons , std::vector<float>(num_hidden_neurons));
 
-// weights_ih[0][0] = 0.6f; weights_ih[0][1] = 0.3f; weights_ih[0][2] = 1.1f; weights_ih[0][3] = 0.8f;
 
-// weights_ih[1][0] = 0.2f; weights_ih[1][1] = 0.7f; weights_ih[1][2] = 1.1f; weights_ih[1][3] = 0.1f;
-
-// weights_ih[2][0] = 0.9f; weights_ih[2][1] = 0.1f; weights_ih[2][2] = 1.1f; weights_ih[2][3] = 0.2f;
 
 for ( int hid_idx = 0 ; hid_idx < num_hidden_neurons ; ++hid_idx ){
     for ( int in_idx = 0 ; in_idx < num_input_neurons ; ++in_idx ){
@@ -176,13 +165,7 @@ all_weights.push_back(weights_ih);
 
 std::vector < std::vector<float>> weights_ho ( num_hidden_neurons , std::vector<float>(num_output_neurons));
 
-// weights_ho[0][0] = 0.5f; weights_ho[0][1] = 0.3f;
 
-// weights_ho[1][0] = 0.2f; weights_ho[1][1] = 0.8f;
-
-// weights_ho[2][0] = 0.7f; weights_ho[2][1] = 0.1f;
-
-// weights_ho[3][0] = 0.4f; weights_ho[3][1] = 0.6f;
 
 for (int out_idx = 0 ; out_idx < num_output_neurons ; ++out_idx ){
     for ( int hi_idx = 0 ; hi_idx < num_hidden_neurons ; ++hi_idx ){
@@ -197,9 +180,7 @@ std::priority_queue<SpikeEvent , std::vector<SpikeEvent> , std::greater<SpikeEve
 
 int current_simulation_time = 0.0;
 
-// event_queue.push({ 20 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 0 , 1.2f });
-// event_queue.push({ 50 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 1 , 1.0f });
-// event_queue.push({ 70 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 2 , 1.5f });
+
 
 int total_input_timestamp = spike_input.size();
 
@@ -219,7 +200,7 @@ std::vector<int> output_spike_counts (num_output_neurons , 0 );
 
 std::cout<<"---starting simulation---\n";
 
-while( !event_queue.empty() & current_simulation_time <= simulation_end_time ){
+while( !event_queue.empty() && current_simulation_time <= simulation_end_time ){
 
     SpikeEvent current_event = event_queue.top();
 
@@ -233,17 +214,14 @@ while( !event_queue.empty() & current_simulation_time <= simulation_end_time ){
 
     }
 
-    // std::cout<<"\nTime  "<<current_simulation_time<<" - processing event type ";
 
     if ( current_event.Type == INPUT_SPIKE_EVENT){
 
-        // std::cout << "INPUT_SPIKE_EVENT (to Input Layer Neuron " << current_event.target_neuron_id << ")\n";
 
         LIFNeuron& target_neuron = all_layers[0][current_event.target_neuron_id];
 
         bool fired = target_neuron.update_membrane_and_check_spike ( current_event.effective_current , current_simulation_time );
 
-        // std::cout<<" Input Neuron "<< current_event.target_neuron_id<<" Vm "<<target_neuron.get_membrane_potential();
 
         if (fired){
 
@@ -278,22 +256,16 @@ while( !event_queue.empty() & current_simulation_time <= simulation_end_time ){
 
     else if (current_event.Type == NEURON_SPIKE_EVENT) {
 
-                    //   std::cout << "NEURON_SPIKE_EVENT (from Layer " << current_event.source_neuron_layer_id
-                    //   << " Neuron " << current_event.source_neuron_id
-                    //   << " to Layer " << current_event.target_neuron_layer_id
-                    //   << " Neuron " << current_event.target_neuron_id << ")\n";
+
 
                       LIFNeuron& target_neuron = all_layers[current_event.target_neuron_layer_id][current_event.target_neuron_id];
 
                       bool fired = target_neuron.update_membrane_and_check_spike(current_event.effective_current , current_simulation_time );
 
-                    //   std::cout << "  Layer " << current_event.target_neuron_layer_id
-                    //   << " Neuron " << current_event.target_neuron_id
-                    //   << ": Vm = " << target_neuron.get_membrane_potential();
+
 
                         if (fired){
                             
-                            // std::cout<<" spike \n";
 
                             int source_layer_idx = current_event.target_neuron_layer_id;
                             int next_layer_idx = source_layer_idx + 1;
@@ -317,14 +289,12 @@ while( !event_queue.empty() & current_simulation_time <= simulation_end_time ){
 
                             else{
 
-                                    // std::cout<<"output layer spike";
 
                                     output_spike_counts[current_event.target_neuron_id]++;
 
                                 }
 
                         }
-                                    // std::cout << std::endl;
 
                 }
 
