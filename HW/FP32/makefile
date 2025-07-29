@@ -1,11 +1,11 @@
 CXX = g++
 CXXXFLAGS = -std=c++11 -Wall
 
-TARGET = SNN
+TARGET = SNNP
 
-SRCS = SNN_MNIST.cpp weights.cpp spikes.cpp
+SRCS = test.cpp SNN_MNIST.cpp weights.cpp
 
-HDRS = weights.h spikes.h
+HDRS = weights.h SNN_MNIST.h
 
 $(TARGET) : $(SRCS) $(HDRS)
 	$(CXX) $(CXXXFLAGS) -o $(TARGET) $(SRCS)
