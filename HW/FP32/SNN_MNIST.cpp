@@ -4,6 +4,8 @@
 #include<queue>
 #include<functional>
 #include "weights.h"
+#include "spikes.h"
+
 
 
 class LIFNeuron {
@@ -103,7 +105,12 @@ struct SpikeEvent {
     bool operator>(const SpikeEvent& other)const{
         if (scheduled_time != other.scheduled_time){
             return scheduled_time > other.scheduled_time;
+        } 
+
+        if (target_neuron_layer_id != other.target_neuron_layer_id) {
+            return target_neuron_layer_id < other.target_neuron_layer_id; 
         }
+
         return target_neuron_id > other.target_neuron_id;
     }
 
@@ -180,7 +187,7 @@ std::vector < std::vector<float>> weights_ho ( num_hidden_neurons , std::vector<
 for (int out_idx = 0 ; out_idx < num_output_neurons ; ++out_idx ){
     for ( int hi_idx = 0 ; hi_idx < num_hidden_neurons ; ++hi_idx ){
         weights_ho[hi_idx][out_idx] = fc2_weight[ out_idx * num_hidden_neurons + hi_idx ];
-    }
+    } 
 }
 all_weights.push_back(weights_ho);
 
@@ -190,11 +197,23 @@ std::priority_queue<SpikeEvent , std::vector<SpikeEvent> , std::greater<SpikeEve
 
 int current_simulation_time = 0.0;
 
-event_queue.push({ 20 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 0 , 1.2f });
-event_queue.push({ 50 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 1 , 1.0f });
-event_queue.push({ 70 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 2 , 1.5f });
+// event_queue.push({ 20 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 0 , 1.2f });
+// event_queue.push({ 50 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 1 , 1.0f });
+// event_queue.push({ 70 , INPUT_SPIKE_EVENT , -1 , -1 , 0 , 2 , 1.5f });
 
-int simulation_end_time = 100;
+int total_input_timestamp = spike_input.size();
+
+int simulation_end_time = total_input_timestamp;
+
+if ( simulation_end_time == 0 ) std::cout<<"ERROR.\n";
+
+for ( int t = 0 ; t < total_input_timestamp ; ++t ){
+    for ( int neuron_idx = 0 ; neuron_idx < num_input_neurons ; ++neuron_idx ){
+        if (spike_input[t][neuron_idx] == 1){
+            event_queue.push({t,INPUT_SPIKE_EVENT,-1,-1,0,neuron_idx,1.0f});
+        }
+    }
+}
 
 std::vector<int> output_spike_counts (num_output_neurons , 0 );
 
@@ -228,7 +247,7 @@ while( !event_queue.empty() & current_simulation_time <= simulation_end_time ){
 
         if (fired){
 
-            std::cout<<"\n Spike ";
+            // std::cout<<"\n Spike ";
 
             int source_layer_idx = 0 ;
 
@@ -326,7 +345,7 @@ while( !event_queue.empty() & current_simulation_time <= simulation_end_time ){
     int wining_neuron_id = -1 ; 
 
     for (int i = 0 ; i < num_output_neurons ; ++i ){
-        // std::cout<<"Output Neuron "<<i<<": "<<output_spike_counts[i]<<" spikes\n";
+        std::cout<<"Output Neuron "<<i<<": "<<output_spike_counts[i]<<" spikes\n";
         if (output_spike_counts[i] > max_spikes ){
             max_spikes = output_spike_counts[i];
             wining_neuron_id = i ;
