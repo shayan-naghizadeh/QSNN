@@ -1,1 +1,5 @@
 /SF/FP32/data
+/HW/FP32/spikes.txt
+/HW/FP32/labels.txt
+/HW/FP32/TestDataset.cpp
+/HW/FP32/TestDataset.h

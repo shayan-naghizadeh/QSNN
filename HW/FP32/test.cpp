@@ -53,8 +53,6 @@ void load_dataset(
 }
 
 
-
-
 int main() {
     std::vector<std::vector<std::vector<int>>> dataset_spikes;
     std::vector<int> labels;
