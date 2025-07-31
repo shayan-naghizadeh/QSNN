@@ -57,6 +57,13 @@
         "queue": "cpp",
         "unordered_map": "cpp",
         "xhash": "cpp",
-        "snn_mnist": "cpp"
+        "snn_mnist": "cpp",
+        "complex": "cpp",
+        "fstream": "cpp",
+        "iomanip": "cpp",
+        "map": "cpp",
+        "sstream": "cpp",
+        "string": "cpp",
+        "xtree": "cpp"
     }
 }

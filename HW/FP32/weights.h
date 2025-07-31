@@ -3,7 +3,7 @@
 
 #include <vector>
 
-extern std::vector<float> fc1_weight;
-extern std::vector<float> fc2_weight;
+extern const std::vector<float> fc1_weight;  
+extern const std::vector<float> fc2_weight;  
 
 #endif
