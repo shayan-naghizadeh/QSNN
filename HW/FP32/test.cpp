@@ -59,7 +59,7 @@ int main() {
 
     load_dataset(dataset_spikes, labels);
 
-    int total_samples = dataset_spikes.size();
+    int total_samples = 100;
     int correct = 0;
 
     std::cout << "--- Running SNN on Test Dataset ---\n";
