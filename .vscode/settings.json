@@ -65,6 +65,7 @@
         "sstream": "cpp",
         "string": "cpp",
         "xtree": "cpp",
-        "array": "cpp"
+        "array": "cpp",
+        "bitset": "cpp"
     }
 }
