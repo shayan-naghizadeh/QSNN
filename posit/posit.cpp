@@ -19,6 +19,17 @@ class posit{
         uint8_t fraction;
         uint8_t temp2;
 
+    posit operator+(const posit& other) const {
+        posit a = *this;
+        posit b = other;
+        uint8_t sumBits = posit::addition(a, b);
+        return posit(sumBits, bitCount, es);
+    }
+
+    posit& operator+=(const posit& other) {
+        *this = *this + other;
+        return *this;
+    }
 
 
         posit(uint8_t binary, uint8_t bits, uint8_t esValue):
@@ -244,12 +255,11 @@ class posit{
 
 int main(){
 
-    posit aa(0b10001000,8,2);
-    posit bb(0b10000000,8,2);
+    posit aa(0b01010010,8,2);
+    posit bb(0b01010000,8,2);
     aa.display();
     bb.display();
-    uint8_t sum = posit::addition(aa,bb);
-    posit s(sum,8,2);
+    posit s = aa + bb;
     s.display();
 
     return 0;
