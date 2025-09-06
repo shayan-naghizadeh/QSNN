@@ -40,6 +40,14 @@ public:
     
     bool operator>(const posit& other) const;
 
+    posit& operator+=(const posit& other);
+
+    posit& operator-=(const posit& other);
+
+    bool operator<=(const posit& other) const;
+
+    bool operator>=(const posit& other) const;
+
 
 };
 

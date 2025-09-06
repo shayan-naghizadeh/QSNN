@@ -5,3 +5,9 @@
 /HW/FP32/TestDataset.h
 /hls/snn
 /hls/spikes.txt
+/posit/spikes.txt
+/posit/weights.cpp
+/posit/labels.txt
+/posit/weights.h
+weights_posit8.cpp
+/posit/weights.jl

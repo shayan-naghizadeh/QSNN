@@ -50,6 +50,23 @@ bool posit::operator>(const posit& other) const {
     return other < *this;
 }
 
+bool posit::operator<=(const posit& other) const {
+    return !(*this > other);
+}
+
+bool posit::operator>=(const posit& other) const {
+    return !(*this < other);
+}
+
+posit& posit::operator+=(const posit& other) {
+    *this = *this + other;
+    return *this;
+}
+
+posit& posit::operator-=(const posit& other) {
+    *this = *this - other;
+    return *this;
+}
 
 
 posit::posit(uint8_t binary, uint8_t bits, uint8_t esValue):
