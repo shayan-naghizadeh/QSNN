@@ -21,19 +21,19 @@ function convert_weights_to_posit8()
             end
         end
         
-        # Save to a new .cpp file with 0b binary notation
+        # Save to a new .cpp file with posit objects
         open("weights_posit8.cpp", "w") do f
-            write(f, "// Converted weights to Posit8 bitstrings in C++ format\n")
-            write(f, "#include <array>\n\n")
+            write(f, "// Converted weights to Posit8 objects in C++ format\n")
+            write(f, "#include <array>\n")
+            write(f, "#include \"posit.h\"\n\n")
             
             # fc1_posit8 (784x256)
-            write(f, "std::array<std::array<uint8_t, 256>, 784> fc1_posit8 = {\n")
+            write(f, "std::array<std::array<posit, 256>, 784> fc1_posit8 = {\n")
             for i in 1:size(fc1_posit8, 1)
                 write(f, "    {")
                 for j in 1:size(fc1_posit8, 2)
-                    # Convert bitstring to 0b binary literal (remove spaces and add 0b prefix)
-                    bits = replace(fc1_posit8[i,j], " " => "")
-                    write(f, "0b" * bits)
+                    bits = replace(fc1_posit8[i,j], " " => "")  # Remove spaces
+                    write(f, "posit(0b" * bits * ", 8, 2)")
                     write(f, j < size(fc1_posit8, 2) ? ", " : "")
                 end
                 write(f, "},\n")
@@ -41,12 +41,12 @@ function convert_weights_to_posit8()
             write(f, "};\n\n")
             
             # fc2_posit8 (256x10)
-            write(f, "std::array<std::array<uint8_t, 10>, 256> fc2_posit8 = {\n")
+            write(f, "std::array<std::array<posit, 10>, 256> fc2_posit8 = {\n")
             for i in 1:size(fc2_posit8, 1)
                 write(f, "    {")
                 for j in 1:size(fc2_posit8, 2)
                     bits = replace(fc2_posit8[i,j], " " => "")
-                    write(f, "0b" * bits)
+                    write(f, "posit(0b" * bits * ", 8, 2)")
                     write(f, j < size(fc2_posit8, 2) ? ", " : "")
                 end
                 write(f, "},\n")

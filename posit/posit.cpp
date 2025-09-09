@@ -1,8 +1,3 @@
-#include <iostream>
-#include <bitset>
-#include <cstdint>
-#include "posit.h"
-
 
 #include <iostream>
 #include <bitset>
@@ -181,7 +176,7 @@ uint8_t posit::addition(posit& num1,posit& num2){
             result = result >> 1;
             result = result & 0x07;
             sf_larger++;
-            std::cout<<std::endl<<"y "<<(int)result<<std::endl;
+            // std::cout<<std::endl<<"y "<<(int)result<<std::endl;
 
 
         }else{
@@ -206,14 +201,14 @@ uint8_t posit::addition(posit& num1,posit& num2){
         }
 
         uint8_t local_exp = sf_larger & 0x03;
-        std::cout<<std::endl<<"local exponent "<<(int)local_exp<<std::endl;
+        // std::cout<<std::endl<<"local exponent "<<(int)local_exp<<std::endl;
 
         if ((sf_larger >> 7) == 0) { //positive regime
             sf_larger = sf_larger >> 2; //regime without exponent
             uint8_t NOSFF = (3 - (8 - (sf_larger + 1 + 1 + 1 + 2))); //number of shift need for fraction to right
             uint8_t RegF = (((1 << (sf_larger + 1)) - 1) << 1);  //standard form for regime
-            std::cout<<std::endl<<"local exponent "<<(int)NOSFF<<std::endl;
-            std::cout<<std::endl<<"local exponent "<<(int)RegF<<std::endl;
+            // std::cout<<std::endl<<"local exponent "<<(int)NOSFF<<std::endl;
+            // std::cout<<std::endl<<"local exponent "<<(int)RegF<<std::endl;
             if (sf_larger <= 3) {
                 result = result >> NOSFF;
                 if (NOSFF == 0) {
@@ -226,10 +221,10 @@ uint8_t posit::addition(posit& num1,posit& num2){
                             local_exp = local_exp << 0;
                 }
 
-                std::cout<<std::endl<<"t "<<(int)result<<std::endl;
+                // std::cout<<std::endl<<"t "<<(int)result<<std::endl;
                 LastResult = ( RegF << (7 - (sf_larger + 2))) + local_exp + result;
-                std::cout<<std::endl<<"local result "<<(int)result<<std::endl;
-                std::cout<<std::endl<<"local result "<<(int)local_exp<<std::endl;
+                // std::cout<<std::endl<<"local result "<<(int)result<<std::endl;
+                // std::cout<<std::endl<<"local result "<<(int)local_exp<<std::endl;
 
 
 

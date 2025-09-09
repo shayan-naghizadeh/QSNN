@@ -1,6 +1,4 @@
 #include <iostream>
-// #include "spikes.h"
-// #include "SNN_HLS.h"
 #include "weights.h"
 #include "posit.h"
 
