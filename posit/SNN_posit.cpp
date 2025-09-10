@@ -2,6 +2,7 @@
 #include "weights.h"
 #include "posit.h"
 
+// The LIFNeuron class remains unchanged.
 class LIFNeuron {
 public:
     posit membrane_potential;
@@ -23,11 +24,12 @@ public:
         fixed_leak_amount_per_step(fixed_leak_amt),
         current_reset_mechanism(rest_mech) {}
 
+    // This function updates the neuron's potential based on a single accumulated current.
     bool update_membrane_and_check_spike(posit input_current, int current_event_time) {
         has_fired_in_current_step = false;
 
         membrane_potential += input_current;
-        if (membrane_potential < posit(0,8,2))membrane_potential =posit(0,8,2);
+        if (membrane_potential < posit(0,8,2)) membrane_potential = posit(0,8,2);
 
         if (membrane_potential >= threshold_voltage) {
             has_fired_in_current_step = true;
@@ -48,6 +50,7 @@ public:
     }
 };
 
+// EventType enum and SpikeEvent struct remain unchanged.
 enum EventType {
     INPUT_SPIKE_EVENT,
     NEURON_SPIKE_EVENT
@@ -81,8 +84,8 @@ struct SpikeEvent {
         effective_current(e_current) {}
 };
 
+// The MinHeap class remains unchanged.
 const int MAX_EVENT_IN_HEAP = 100000;
-
 class MinHeap {
 private:
     SpikeEvent heap_array[MAX_EVENT_IN_HEAP];
@@ -129,11 +132,8 @@ private:
     }
 
 public:
-
     int heap_size;
-
     MinHeap() : current_size(0), heap_size(0) {}
-
     bool is_empty() const { return current_size == 0; }
     bool is_full() const { return current_size == MAX_EVENT_IN_HEAP; }
     int size() const { return current_size; }
@@ -170,21 +170,61 @@ public:
         return root;
     }
 
-
     void clear() {
-    current_size = 0;
-    heap_size = 0;
-}
+        current_size = 0;
+        heap_size = 0;
+    }
 };
 
 const int NUM_INPUT_NEURONS = 784;
 const int NUM_HIDDEN_NEURONS = 256;
 const int NUM_OUTPUT_NEURONS = 10;
 
+
+// --- CHANGE START: HLS-friendly 2-level adder tree function ---
+// This function implements the specific 2-level adder for up to 4 inputs.
+// It uses a switch statement which is very efficient for HLS synthesis.
+posit adder_tree_sum(posit currents[], int count) {
+    posit p_zero = posit(0, 8, 2);
+
+    // This structure maps directly to multiplexers in hardware.
+    switch (count) {
+        case 0:
+            return p_zero;
+        case 1:
+            return currents[0];
+        case 2:
+            // Level 1 addition
+            return currents[0] + currents[1];
+        case 3:
+            // Level 1: (a+b), Level 2: (sum)+c
+            return (currents[0] + currents[1]) + currents[2];
+        case 4: {
+            // This is the exact 2-level logic you requested.
+            // Level 1 additions
+            posit sum1 = currents[0] + currents[1];
+            posit sum2 = currents[2] + currents[3];
+            // Level 2 addition
+            return sum1 + sum2;
+        }
+        default: {
+            // Fallback for more than 4 inputs. A simple loop is synthesizable.
+            // This could be further optimized with a more complex tree if needed.
+            posit total_sum = p_zero;
+            for (int i = 0; i < count; ++i) {
+                total_sum += currents[i];
+            }
+            return total_sum;
+        }
+    }
+}
+// --- CHANGE END ---
+
+
 int snn(int spike_input[50][784]) {
     posit v_threshold = posit(0b00111101,8,2);
     posit e_leak = posit(0,8,2);
-    posit fixed_leak_per_step = posit(0,8,2); // Enable leaky behavior
+    posit fixed_leak_per_step = posit(0,8,2);
     LIFNeuron::ResetMechanism reset_mech = LIFNeuron::RESET_TO_ZERO;
 
     static LIFNeuron all_layers_input[NUM_INPUT_NEURONS];
@@ -192,7 +232,6 @@ int snn(int spike_input[50][784]) {
     static LIFNeuron all_layers_output[NUM_OUTPUT_NEURONS];
     static int output_spike_counts[NUM_OUTPUT_NEURONS] = {0};
 
-    // std::cout << "Initializing neurons..." << std::endl;
     for (int i = 0; i < NUM_INPUT_NEURONS; ++i) {
         all_layers_input[i] = LIFNeuron(v_threshold, e_leak, fixed_leak_per_step, reset_mech);
     }
@@ -203,34 +242,28 @@ int snn(int spike_input[50][784]) {
         all_layers_output[i] = LIFNeuron(v_threshold, e_leak, fixed_leak_per_step, reset_mech);
         output_spike_counts[i] = 0;
     }
-    // std::cout << "Neurons initialized." << std::endl;
 
     int MAX_SIMULATION_TIME = 50;
     static MinHeap event_queue;
     event_queue.clear();
 
-    // std::cout << "Loading initial input spikes into event queue..." << std::endl;
-    int initial_spikes_pushed = 0;
     for (int t = 0; t < 50; ++t) {
         for (int neuron_idx = 0; neuron_idx < NUM_INPUT_NEURONS; ++neuron_idx) {
             if (spike_input[t][neuron_idx] == 1) {
-                event_queue.push(SpikeEvent(t, INPUT_SPIKE_EVENT, -1, -1, 0, neuron_idx, posit(0b01000000,8,2))); // Scaled input current
-                initial_spikes_pushed++;
+                event_queue.push(SpikeEvent(t, INPUT_SPIKE_EVENT, -1, -1, 0, neuron_idx, posit(0b01000000,8,2)));
             }
         }
     }
-    // std::cout << "Finished loading initial spikes. Total spikes pushed: " << initial_spikes_pushed << std::endl;
-    // std::cout << "Heap size after initial load: " << event_queue.heap_size << std::endl;
-
-    if (!event_queue.is_empty()) {
-        // std::cout << "First event in queue: time=" << event_queue.top().scheduled_time
-        //           << ", type=" << (event_queue.top().Type == INPUT_SPIKE_EVENT ? "INPUT" : "NEURON")
-        //           << ", target_neuron_id=" << event_queue.top().target_neuron_id << std::endl;
-    }
 
     int current_simulation_time = 0;
-    // std::cout << "\nStarting event-driven simulation..." << std::endl;
     long long events_processed = 0;
+    static bool fired_this_tick_input [NUM_INPUT_NEURONS];
+    static bool fired_this_tick_hidden[NUM_HIDDEN_NEURONS];
+    static bool fired_this_tick_output[NUM_OUTPUT_NEURONS];
+    int last_tick = -1;
+    for (int i = 0; i < NUM_INPUT_NEURONS;  ++i) fired_this_tick_input[i]  = false;
+    for (int i = 0; i < NUM_HIDDEN_NEURONS; ++i) fired_this_tick_hidden[i] = false;
+    for (int i = 0; i < NUM_OUTPUT_NEURONS; ++i) fired_this_tick_output[i] = false;
 
     while (!event_queue.is_empty() && current_simulation_time <= MAX_SIMULATION_TIME) {
         SpikeEvent current_event = event_queue.pop();
@@ -238,96 +271,110 @@ int snn(int spike_input[50][784]) {
         current_simulation_time = current_event.scheduled_time;
 
         if (current_simulation_time > MAX_SIMULATION_TIME) {
-            // std::cout << "Breaking simulation: current_simulation_time (" << current_simulation_time
-            //           << ") > MAX_SIMULATION_TIME (" << MAX_SIMULATION_TIME << ")" << std::endl;
             break;
         }
 
+        if (current_simulation_time != last_tick) {
+            for (int i = 0; i < NUM_INPUT_NEURONS;  ++i) fired_this_tick_input[i]  = false;
+            for (int i = 0; i < NUM_HIDDEN_NEURONS; ++i) fired_this_tick_hidden[i] = false;
+            for (int i = 0; i < NUM_OUTPUT_NEURONS; ++i) fired_this_tick_output[i] = false;
+            last_tick = current_simulation_time;
+        }
+
+        // --- CHANGE START: Logic to group events and use the adder tree ---
+        // 1. Use a fixed-size array instead of std::vector for HLS.
+        const int MAX_SIMULTANEOUS_INPUTS = 32; // A safe upper bound, increased to 32.
+        // **FIX**: Explicitly initialize the array to satisfy the compiler,
+        // as the 'posit' class lacks a default constructor.
+        posit currents_to_sum[MAX_SIMULTANEOUS_INPUTS] = {
+            posit(0,8,2), posit(0,8,2), posit(0,8,2), posit(0,8,2),
+            posit(0,8,2), posit(0,8,2), posit(0,8,2), posit(0,8,2),
+            posit(0,8,2), posit(0,8,2), posit(0,8,2), posit(0,8,2),
+            posit(0,8,2), posit(0,8,2), posit(0,8,2), posit(0,8,2),
+            posit(0,8,2), posit(0,8,2), posit(0,8,2), posit(0,8,2),
+            posit(0,8,2), posit(0,8,2), posit(0,8,2), posit(0,8,2),
+            posit(0,8,2), posit(0,8,2), posit(0,8,2), posit(0,8,2),
+            posit(0,8,2), posit(0,8,2), posit(0,8,2), posit(0,8,2)
+        };
+        int current_count = 0;
+
+        // 2. Store the first event's current.
+        currents_to_sum[current_count++] = current_event.effective_current;
+        int target_layer = current_event.target_neuron_layer_id;
+        int target_id = current_event.target_neuron_id;
+
+        // 3. Group all other events for the same neuron at the same time.
+        while (!event_queue.is_empty() &&
+               event_queue.top().scheduled_time == current_simulation_time &&
+               event_queue.top().target_neuron_layer_id == target_layer &&
+               event_queue.top().target_neuron_id == target_id)
+        {
+            // Ensure we don't overflow our fixed-size array.
+            if (current_count < MAX_SIMULTANEOUS_INPUTS) {
+                SpikeEvent next_event = event_queue.pop();
+                currents_to_sum[current_count++] = next_event.effective_current;
+            } else {
+                // If we exceed the max, stop grouping to prevent memory errors.
+                // In a real hardware design, this might be an error flag.
+                break;
+            }
+        }
+
+        // 4. Sum the collected currents using our HLS-friendly adder tree.
+        posit total_input_current = adder_tree_sum(currents_to_sum, current_count);
+
+        // 5. Update the target neuron exactly ONCE with the final sum.
         if (current_event.Type == INPUT_SPIKE_EVENT) {
-            LIFNeuron& target_neuron = all_layers_input[current_event.target_neuron_id];
-            posit initial_mp = target_neuron.membrane_potential;
-            bool fired = target_neuron.update_membrane_and_check_spike(current_event.effective_current, current_simulation_time);
-
-            // std::cout << "  Input Neuron " << current_event.target_neuron_id
-            //           << ": MP_before=" << initial_mp << ", Input=" << current_event.effective_current
-            //           << ", MP_after=" << target_neuron.membrane_potential << ", Fired=" << fired << std::endl;
-
-            if (fired) {
-                int source_layer_idx = 0;
-                int next_layer_idx = source_layer_idx + 1;
-                if (next_layer_idx < 3) {
+            LIFNeuron& target_neuron = all_layers_input[target_id];
+            if (!fired_this_tick_input[target_id]) {
+                bool fired = target_neuron.update_membrane_and_check_spike(total_input_current, current_simulation_time);
+                if (fired) {
+                    fired_this_tick_input[target_id] = true;
                     for (int j = 0; j < NUM_HIDDEN_NEURONS; ++j) {
-                        posit effective_input_to_next_neuron = fc1_weight[current_event.target_neuron_id][j];
-                        event_queue.push(SpikeEvent(current_simulation_time + 1, NEURON_SPIKE_EVENT, source_layer_idx, current_event.target_neuron_id, next_layer_idx, j, effective_input_to_next_neuron));
+                        event_queue.push(SpikeEvent(current_simulation_time + 1, NEURON_SPIKE_EVENT, 0, target_id, 1, j, fc1_weight[target_id][j]));
                     }
                 }
             }
         }
         else if (current_event.Type == NEURON_SPIKE_EVENT) {
             LIFNeuron* target_neuron_ptr = nullptr;
-            if (current_event.target_neuron_layer_id == 1) {
-                target_neuron_ptr = &all_layers_hidden[current_event.target_neuron_id];
+            bool already_fired = false;
+
+            if (target_layer == 1) {
+                target_neuron_ptr = &all_layers_hidden[target_id];
+                already_fired = fired_this_tick_hidden[target_id];
+            } else if (target_layer == 2) {
+                target_neuron_ptr = &all_layers_output[target_id];
+                already_fired = fired_this_tick_output[target_id];
             }
-            else if (current_event.target_neuron_layer_id == 2) {
-                target_neuron_ptr = &all_layers_output[current_event.target_neuron_id];
-            }
-            else {
-                std::cerr << "Error: Unexpected target_neuron_layer_id: " << current_event.target_neuron_layer_id << std::endl;
-                continue;
-            }
-            LIFNeuron& target_neuron = *target_neuron_ptr;
 
-            posit initial_mp = target_neuron.membrane_potential;
-            bool fired = target_neuron.update_membrane_and_check_spike(current_event.effective_current, current_simulation_time);
-
-            // std::cout << "  Neuron Layer " << current_event.target_neuron_layer_id << ", ID " << current_event.target_neuron_id
-            //           << ": MP_before=" << initial_mp << ", Input=" << current_event.effective_current
-            //           << ", MP_after=" << target_neuron.membrane_potential << ", Fired=" << fired << std::endl;
-
-            if (fired) {
-                int source_layer_idx = current_event.target_neuron_layer_id;
-                int next_layer_idx = source_layer_idx + 1;
-
-                if (next_layer_idx < 3) {
-                    if (source_layer_idx == 1) {
+            if (target_neuron_ptr != nullptr && !already_fired) {
+                bool fired = target_neuron_ptr->update_membrane_and_check_spike(total_input_current, current_simulation_time);
+                if (fired) {
+                    if (target_layer == 1) {
+                        fired_this_tick_hidden[target_id] = true;
+                        // Propagate spikes to the next layer (output)
                         for (int j = 0; j < NUM_OUTPUT_NEURONS; ++j) {
-                            posit effective_input_to_next_neuron = fc2_weight[current_event.target_neuron_id][j];
-                            event_queue.push(SpikeEvent(current_simulation_time + 1, NEURON_SPIKE_EVENT, source_layer_idx, current_event.target_neuron_id, next_layer_idx, j, effective_input_to_next_neuron));
-                            // if (effective_input_to_next_neuron != 0.0f) {
-                            //     std::cout << "      Scheduling spike from Hidden " << current_event.target_neuron_id
-                            //               << " to Output " << j << " with current " << effective_input_to_next_neuron
-                            //               << " at time: " << current_simulation_time + 1 << std::endl;
-                            // }
+                            event_queue.push(SpikeEvent(current_simulation_time + 1, NEURON_SPIKE_EVENT, 1, target_id, 2, j, fc2_weight[target_id][j]));
                         }
+                    } else { // target_layer == 2
+                        fired_this_tick_output[target_id] = true;
+                        output_spike_counts[target_id]++;
                     }
-                }
-                else {
-                    output_spike_counts[current_event.target_neuron_id]++;
-                    // std::cout << "      Output Neuron " << current_event.target_neuron_id
-                    //           << " spiked! Total spikes: " << output_spike_counts[current_event.target_neuron_id] << std::endl;
                 }
             }
         }
+        // --- CHANGE END ---
     }
-
-    // std::cout << "\nSimulation finished. Total events processed: " << events_processed << std::endl;
-    // std::cout << "Final heap size: " << event_queue.heap_size << std::endl;
 
     int max_spikes = -1;
     int winning_neuron_id = -1;
-    // std::cout << "\nOutput Spike Counts:" << std::endl;
     for (int i = 0; i < NUM_OUTPUT_NEURONS; ++i) {
-        // std::cout << "Neuron " << i << ": " << output_spike_counts[i] << " spikes" << std::endl;
         if (output_spike_counts[i] > max_spikes) {
             max_spikes = output_spike_counts[i];
             winning_neuron_id = i;
         }
     }
-    // std::cout << "Winning Neuron ID: " << winning_neuron_id << std::endl;
-
-    for (int i = 0; i < NUM_OUTPUT_NEURONS; ++i) {
-        // std::cout << "Output Neuron " << i << " final MP: " << all_layers_output[i].get_membrane_potential() << std::endl;
-    }
-
     return winning_neuron_id;
 }
+
