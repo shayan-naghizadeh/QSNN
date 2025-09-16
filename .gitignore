@@ -11,3 +11,7 @@
 /posit/weights.h
 weights_posit8.cpp
 /posit/weights.jl
+/hls_bottom_up/spikes.txt
+/hls_bottom_up/weights.cpp
+/hls_bottom_up/weights.h
+/hls_bottom_up/labels.txt
