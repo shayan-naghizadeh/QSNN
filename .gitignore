@@ -1,4 +1,7 @@
 /SF/FP32/data
+/SF/FP32/fweights.txt
+/SF/FP32/weights60.cpp
+/SF/FP32/weights62.cpp
 /HW/FP32/spikes.txt
 /HW/FP32/labels.txt
 /HW/FP32/TestDataset.cpp
@@ -15,3 +18,16 @@ weights_posit8.cpp
 /hls_bottom_up/weights.cpp
 /hls_bottom_up/weights.h
 /hls_bottom_up/labels.txt
+/test62
+/tposit6_2/labels.txt
+/tposit6_2/spikes.txt
+/tposit6_2/snn/
+/tposit6_2/fc1_weights.txt
+/tposit6_2/fc2_weights.txt
+/tposit6_2/weights62.cpp
+/tposit6_2/vitis_hls.log
+/tposit6_2/weights.cpp
+/tposit6_2/weights.h
+/posit6_2/labels.txt
+/posit6_2/spikes.txt
+/posit6_2/weights62.h
